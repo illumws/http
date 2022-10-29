@@ -1,0 +1,35 @@
+{
+    "name": "illum/http",
+    "description": "Modulo http para illum routing",
+    "keywords": [
+        "http",
+        "request",
+        "response",
+        "headers",
+        "php",
+        "framework"
+    ],
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "alessandro",
+            "email": "alessandroamos00@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "illum\\Http\\": "src/"
+        },
+        "files": ["src/helper.php"]
+    },
+    "minimum-stability": "dev",
+	"prefer-stable": true,
+    "require": {
+        "leafs/anchor": "^v1.*",
+        "symfony/polyfill-php80": "^1.26"
+    },
+    "require-dev": {
+        "symfony/var-dumper": "^5.4"
+    }
+}
