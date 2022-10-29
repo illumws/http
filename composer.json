@@ -27,7 +27,8 @@
 	"prefer-stable": true,
     "require": {
         "leafs/anchor": "v1.*",
-        "symfony/polyfill-php80": "^1.26"
+        "symfony/polyfill-php80": "^1.26",
+        "ext-json": "*"
     },
     "require-dev": {
         "symfony/var-dumper": "^5.4"

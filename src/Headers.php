@@ -13,21 +13,22 @@ class Headers
      * Get or Set an HTTP code for response
      *
      * @param int|null $httpCode The current response code.
+     * @return void
      */
     public static function status(int $httpCode = null)
     {
-        if ($httpCode === null) return self::$httpCode;
+        if ($httpCode === null) return;
         self::$httpCode = $httpCode;
     }
 
     /**
      * Force an HTTP code for response using PHP's `http_response_code`
      * 
-     * @param int $httpCode The response code to set
+     * @param int $code The response code to set
      */
-    public static function resetStatus($httpCode = 200)
+    public static function resetStatus(int $code = 200)
     {
-        return http_response_code($httpCode);
+        return http_response_code($code);
     }
 
     /**
@@ -37,10 +38,6 @@ class Headers
      */
     public static function all(bool $safeOutput = false): array
     {
-        if (class_exists('Leaf\Eien\Server') && PHP_SAPI === 'cli') {
-            return \Leaf\Config::get('request.headers');
-        }
-
         return ($safeOutput === false) ?
             self::findHeaders() :
             \Leaf\Anchor::sanitize(self::findHeaders());

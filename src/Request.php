@@ -32,7 +32,7 @@ class Request
     /**
      * @var array
      */
-    protected static $formDataMediaTypes = ['application/x-www-form-urlencoded'];
+    protected static array $formDataMediaTypes = ['application/x-www-form-urlencoded'];
 
     /**
      * @return false|mixed|string
@@ -336,7 +336,7 @@ class Request
      *
      * @return mixed
      */
-    public static function params(string $key = null, mixed $default = null): mixed
+    public static function params(string $key = null, $default = null)
     {
         $union = static::body();
 
@@ -603,7 +603,7 @@ class Request
     public static function getHost(): string
     {
         if (isset($_SERVER['HTTP_HOST'])) {
-            if (preg_match('/^(\[[a-fA-F0-9:.]+\])(:\d+)?\z/', $_SERVER['HTTP_HOST'], $matches)) {
+            if (preg_match('/^(\[[a-fA-F0-9:.]+])(:\d+)?\z/', $_SERVER['HTTP_HOST'], $matches)) {
                 return $matches[1];
             } else if (strpos($_SERVER['HTTP_HOST'], ':') !== false) {
                 $hostParts = explode(':', $_SERVER['HTTP_HOST']);
