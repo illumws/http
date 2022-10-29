@@ -2,7 +2,6 @@
 
 namespace illum\Http;
 
-
 class Request
 {
     const METHOD_HEAD = 'HEAD';
@@ -15,224 +14,9 @@ class Request
     const METHOD_OVERRIDE = '_METHOD';
 
     /**
-     * @var string|null
-     */
-    protected static ?string $requestUri = null;
-
-    /**
-     * @var string|null
-     */
-    protected static ?string $pathInfo = null;
-
-    /**
-     * @var string|null
-     */
-    protected static ?string $baseUrl = null;
-
-    /**
      * @var array
      */
     protected static array $formDataMediaTypes = ['application/x-www-form-urlencoded'];
-
-    /**
-     * @return false|mixed|string
-     */
-    public static function prepareRequestUri(){
-        $requestUri = '';
-
-        if (isset($_SERVER['IIS_WasUrlRewritten']) and isset($_SERVER['UNENCODED_URL']) and '1' == $_SERVER['IIS_WasUrlRewritten'] && '' != $_SERVER['UNENCODED_URL']) {
-            // IIS7 with URL Rewrite: make sure we get the unencoded URL (double slash problem)
-            $requestUri = $_SERVER['UNENCODED_URL'];
-            unset($_SERVER['UNENCODED_URL']);
-            unset($_SERVER['IIS_WasUrlRewritten']);
-        } elseif (isset($_SERVER['REQUEST_URI'])) {
-            $requestUri = $_SERVER['REQUEST_URI'];
-
-            if ('' !== $requestUri && '/' === $requestUri[0]) {
-                // To only use path and query remove the fragment.
-                if (false !== $pos = strpos($requestUri, '#')) {
-                    $requestUri = substr($requestUri, 0, $pos);
-                }
-            } else {
-                // HTTP proxy reqs setup request URI with scheme and host [and port] + the URL path,
-                // only use URL path.
-                $uriComponents = parse_url($requestUri);
-
-                if (isset($uriComponents['path'])) {
-                    $requestUri = $uriComponents['path'];
-                }
-
-                if (isset($uriComponents['query'])) {
-                    $requestUri .= '?'.$uriComponents['query'];
-                }
-            }
-        } elseif (isset($_SERVER['ORIG_PATH_INFO'])) {
-            // IIS 5.0, PHP as CGI
-            $requestUri = $_SERVER['ORIG_PATH_INFO'];
-            if ('' != $_SERVER['QUERY_STRING']) {
-                $requestUri .= '?'.$_SERVER['QUERY_STRING'];
-            }
-            unset($_SERVER['ORIG_PATH_INFO']);
-        }
-
-        // normalize the request URI to ease creating sub-requests from this request
-        $_SERVER['REQUEST_URI'] = $requestUri;
-
-        return $requestUri;
-    }
-
-    /**
-     * @return string
-     */
-    public static function getRequestUri(): string
-    {
-        if (null === static::$requestUri) {
-            static::$requestUri = static::prepareRequestUri();
-        }
-
-        return static::$requestUri;
-    }
-
-    /**
-     * @return false|string
-     */
-    public static function preparePathInfo(){
-
-        if (null === ($requestUri = static::getRequestUri())) {
-            return '/';
-        }
-
-        // Remove the query string from REQUEST_URI
-        if (false !== $pos = strpos($requestUri, '?')) {
-            $requestUri = substr($requestUri, 0, $pos);
-        }
-        if ('' !== $requestUri && '/' !== $requestUri[0]) {
-            $requestUri = '/'.$requestUri;
-        }
-
-        if (null === ($baseUrl = static::getBaseUrlReal())) {
-            return $requestUri;
-        }
-
-        $pathInfo = substr($requestUri, \strlen($baseUrl));
-        if (false === $pathInfo || '' === $pathInfo) {
-            // If substr() returns false then PATH_INFO is set to an empty string
-            return '/';
-        }
-
-        return $pathInfo;
-    }
-
-    /**
-     * @return string
-     */
-    public static function getPathInfo(): string
-    {
-        if (null === static::$pathInfo) {
-            static::$pathInfo = static::preparePathInfo();
-        }
-
-        return static::$pathInfo;
-    }
-
-    /**
-     * Prepares the base URL.
-     */
-    protected static function prepareBaseUrl(): string
-    {
-        $filename = basename($_SERVER['SCRIPT_FILENAME'] ?? '');
-
-        if (basename($_SERVER['SCRIPT_NAME'] ?? '') === $filename) {
-            $baseUrl = $_SERVER['SCRIPT_NAME'];
-        } elseif (basename($_SERVER['PHP_SELF'] ?? '') === $filename) {
-            $baseUrl = $_SERVER['PHP_SELF'];
-        } elseif (basename($_SERVER['ORIG_SCRIPT_NAME'] ?? '') === $filename) {
-            $baseUrl = $_SERVER['ORIG_SCRIPT_NAME']; // 1and1 shared hosting compatibility
-        } else {
-            // Backtrack up the script_filename to find the portion matching
-            // php_self
-            $path = $_SERVER['PHP_SELF'] ?? '';
-            $file = $_SERVER['SCRIPT_FILENAME'] ?? '';
-            $segs = explode('/', trim($file, '/'));
-            $segs = array_reverse($segs);
-            $index = 0;
-            $last = \count($segs);
-            $baseUrl = '';
-            do {
-                $seg = $segs[$index];
-                $baseUrl = '/'.$seg.$baseUrl;
-                ++$index;
-            } while ($last > $index && (false !== $pos = strpos($path, $baseUrl)) && 0 != $pos);
-        }
-
-        // Does the baseUrl have anything in common with the request_uri?
-        $requestUri = static::getRequestUri();
-        if ('' !== $requestUri && '/' !== $requestUri[0]) {
-            $requestUri = '/'.$requestUri;
-        }
-
-        if ($baseUrl && null !== $prefix = static::getUrlencodedPrefix($requestUri, $baseUrl)) {
-            // full $baseUrl matches
-            return $prefix;
-        }
-
-        if ($baseUrl && null !== $prefix = static::getUrlencodedPrefix($requestUri, rtrim(\dirname($baseUrl), '/'.\DIRECTORY_SEPARATOR).'/')) {
-            // directory portion of $baseUrl matches
-            return rtrim($prefix, '/'.\DIRECTORY_SEPARATOR);
-        }
-
-        $truncatedRequestUri = $requestUri;
-        if (false !== $pos = strpos($requestUri, '?')) {
-            $truncatedRequestUri = substr($requestUri, 0, $pos);
-        }
-
-        $basename = basename($baseUrl ?? '');
-        if (empty($basename) || !strpos(rawurldecode($truncatedRequestUri), $basename)) {
-            // no match whatsoever; set it blank
-            return '';
-        }
-
-        // If using mod_rewrite or ISAPI_Rewrite strip the script filename
-        // out of baseUrl. $pos !== 0 makes sure it is not matching a value
-        // from PATH_INFO or QUERY_STRING
-        if (\strlen($requestUri) >= \strlen($baseUrl) && (false !== $pos = strpos($requestUri, $baseUrl)) && 0 !== $pos) {
-            $baseUrl = substr($requestUri, 0, $pos + \strlen($baseUrl));
-        }
-
-        return rtrim($baseUrl, '/'.\DIRECTORY_SEPARATOR);
-    }
-
-    /**
-     * @return string
-     */
-    private static function getBaseUrlReal(): string
-    {
-        if (null === static::$baseUrl) {
-            static::$baseUrl = static::prepareBaseUrl();
-        }
-
-        return static::$baseUrl;
-    }
-
-    /**
-     * @param string $string
-     * @param string $prefix
-     * @return string|null
-     */
-    private static function getUrlencodedPrefix(string $string, string $prefix): ?string
-    {
-        if (!str_starts_with(rawurldecode($string), $prefix)) {
-            return null;
-        }
-
-        $len = \strlen($prefix);
-
-        if (preg_match(sprintf('#^(%%[[:xdigit:]]{2}|.){%d}#', $len), $string, $match)) {
-            return $match[0];
-        }
-
-        return null;
-    }
 
     /**
      * Get HTTP method
@@ -257,10 +41,10 @@ class Request
     /**
      * Find if request has a particular header
      *
-     * @param string $header Header to check for
+     * @param string $header  Header to check for
      * @return bool
      */
-    public static function hasHeader(string $header): bool
+    public static function hasHeader(String $header): bool
     {
         return !!Headers::get($header);
     }
@@ -271,7 +55,7 @@ class Request
      */
     public static function isAjax(): bool
     {
-        if (static::params('isajax')) {
+        if (static::params('is-ajax')) {
             return true;
         }
 
@@ -414,7 +198,7 @@ class Request
     /**
      * Returns request data
      *
-     * This methods returns data passed into the request (request or form data).
+     * These methods return data passed into the request (request or form data).
      * This method returns get, post, put patch, delete or raw faw form data or NULL
      * if the data isn't found.
      *
@@ -485,7 +269,7 @@ class Request
      * Fetch COOKIE data
      *
      * This method returns a key-value array of Cookie data sent in the HTTP request, or
-     * the value of a array key if requested; if the array key does not exist, NULL is returned.
+     * the value of an array key if requested; is the array key does not exist, NULL is returned.
      *
      * @param string|null $key
      * @return array|string|null
@@ -512,7 +296,7 @@ class Request
      * Get Headers
      *
      * This method returns a key-value array of headers sent in the HTTP request, or
-     * the value of a hash key if requested; if the array key does not exist, NULL is returned.
+     * the value of a hash key if requested; is the array key does not exist, NULL is returned.
      *
      * @param array|string|null $key The header(s) to return
      * @param bool $safeData Attempt to sanitize headers
@@ -632,7 +416,7 @@ class Request
      */
     public static function getPort(): int
     {
-        return (int)$_SERVER['SERVER_PORT'] ?? 80;
+        return (int) $_SERVER['SERVER_PORT'] ?? 80;
     }
 
     /**
@@ -660,6 +444,15 @@ class Request
     public static function getPath(): string
     {
         return static::getScriptName() . static::getPathInfo();
+    }
+
+    /**
+     * Get Path Info (virtual path)
+     * @return string|null
+     */
+    public static function getPathInfo(): ?string
+    {
+        return $_SERVER['REQUEST_URI'] ?? null;
     }
 
     /**
