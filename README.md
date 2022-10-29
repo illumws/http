@@ -7,14 +7,14 @@
 <h1 align="center">illum Http</h1>
 
 <p align="center">
-	<a href="https://packagist.org/packages/illum/routing"
+	<a href="https://packagist.org/packages/illum/http"
 		><img
-			src="https://poser.pugx.org/illum/routing/v/stable"
+			src="https://poser.pugx.org/illum/http/v/stable"
 			alt="Latest Stable Version"
 	/></a>
-	<a href="https://packagist.org/packages/illum/routing"
+	<a href="https://packagist.org/packages/illum/http"
 		><img
-			src="https://poser.pugx.org/illum/routing/license"
+			src="https://poser.pugx.org/illum/http/license"
 			alt="License"
 	/></a>
 </p>
