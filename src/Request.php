@@ -2,6 +2,8 @@
 
 namespace illum\Http;
 
+use Leaf\Anchor;
+
 class Request
 {
     const METHOD_HEAD = 'HEAD';
@@ -16,13 +18,13 @@ class Request
     /**
      * @var array
      */
-    protected static array $formDataMediaTypes = ['application/x-www-form-urlencoded'];
+    protected array $formDataMediaTypes = ['application/x-www-form-urlencoded'];
 
     /**
      * Get HTTP method
      * @return string
      */
-    public static function getMethod(): string
+    public function getMethod(): string
     {
         return $_SERVER['REQUEST_METHOD'];
     }
@@ -33,9 +35,9 @@ class Request
      * @param string $type The type of request to check for
      * @return bool
      */
-    public static function typeIs(string $type): bool
+    public function typeIs(string $type): bool
     {
-        return static::getMethod() === strtoupper($type);
+        return $this->getMethod() === strtoupper($type);
     }
 
     /**
@@ -44,7 +46,7 @@ class Request
      * @param string $header  Header to check for
      * @return bool
      */
-    public static function hasHeader(String $header): bool
+    public function hasHeader(String $header): bool
     {
         return !!Headers::get($header);
     }
@@ -53,9 +55,9 @@ class Request
      * Is this an AJAX request?
      * @return bool
      */
-    public static function isAjax(): bool
+    public function isAjax(): bool
     {
-        if (static::params('is-ajax')) {
+        if ($this->params('is-ajax')) {
             return true;
         }
 
@@ -70,9 +72,9 @@ class Request
      * Is this an XHR request? (alias of Leaf_Http_Request::isAjax)
      * @return bool
      */
-    public static function isXhr(): bool
+    public function isXhr(): bool
     {
-        return static::isAjax();
+        return $this->isAjax();
     }
 
     /**
@@ -80,7 +82,7 @@ class Request
      *
      * @param boolean $safeData Sanitize data?
      */
-    public static function input($safeData = true)
+    public function input($safeData = true)
     {
         $handler = fopen('php://input', 'r');
         $data = stream_get_contents($handler);
@@ -105,7 +107,7 @@ class Request
             $data = is_array($parsedData) ? $parsedData : [$parsedData];
         }
 
-        return $safeData ? \Leaf\Anchor::sanitize($data) : $data;
+        return $safeData ? Anchor::sanitize($data) : $data;
     }
 
     /**
@@ -120,9 +122,9 @@ class Request
      *
      * @return mixed
      */
-    public static function params(string $key = null, $default = null)
+    public function params(string $key = null, $default = null)
     {
-        $union = static::body();
+        $union = $this->body();
 
         if ($key) {
             return $union[$key] ?? $default;
@@ -143,9 +145,9 @@ class Request
      * @param bool $safeData Sanitize output?
      * @param bool $noEmptyString Remove empty strings from return data?
      */
-    public static function try(array $params, bool $safeData = true, bool $noEmptyString = false)
+    public function try(array $params, bool $safeData = true, bool $noEmptyString = false)
     {
-        $data = static::get($params, $safeData);
+        $data = $this->get($params, $safeData);
         $dataKeys = array_keys($data);
 
         foreach ($dataKeys as $key) {
@@ -168,9 +170,9 @@ class Request
      * @param string|array $item The items to output
      * @param mixed $default The default value to return if no data is available
      */
-    public static function rawData($item = null, $default = null)
+    public function rawData($item = null, $default = null)
     {
-        return \Leaf\Anchor::deepGet(static::input(false), $item) ?? $default;
+        return Anchor::deepGet($this->input(false), $item) ?? $default;
     }
 
     /**
@@ -179,9 +181,9 @@ class Request
      * @param string|array $item The items to output
      * @param mixed $default The default value to return if no data is available
      */
-    public static function urlData($item = null, $default = null)
+    public function urlData($item = null, $default = null)
     {
-        return \Leaf\Anchor::deepGet($_GET, $item) ?? $default;
+        return Anchor::deepGet($_GET, $item) ?? $default;
     }
 
     /**
@@ -190,9 +192,9 @@ class Request
      * @param string|array $item The items to output
      * @param mixed $default The default value to return if no data is available
      */
-    public static function postData($item = null, $default = null)
+    public function postData($item = null, $default = null)
     {
-        return \Leaf\Anchor::deepGet($_POST, $item) ?? $default;
+        return Anchor::deepGet($_POST, $item) ?? $default;
     }
 
     /**
@@ -205,16 +207,16 @@ class Request
      * @param array|string $params The parameter(s) to return
      * @param bool $safeData Sanitize output
      */
-    public static function get($params, bool $safeData = true)
+    public function get($params, bool $safeData = true)
     {
         if (is_string($params)) {
-            return static::body($safeData)[$params] ?? null;
+            return $this->body($safeData)[$params] ?? null;
         }
 
         $data = [];
 
         foreach ($params as $param) {
-            $data[$param] = static::get($param, $safeData);
+            $data[$param] = $this->get($param, $safeData);
         }
 
         return $data;
@@ -224,9 +226,9 @@ class Request
      * @param bool $safeData
      * @return array
      */
-    public static function all(bool $safeData = false): array
+    public function all(bool $safeData = false): array
     {
-        return static::body($safeData);
+        return $this->body($safeData);
     }
 
     /**
@@ -234,12 +236,12 @@ class Request
      *
      * @param bool $safeData Sanitize output
      */
-    public static function body(bool $safeData = true)
+    public function body(bool $safeData = true)
     {
-        $finalData = array_merge(static::urlData(), $_FILES, static::postData(), static::input());
+        $finalData = array_merge($this->urlData(), $_FILES, $this->postData(), $this->input());
 
         return $safeData ?
-            \Leaf\Anchor::sanitize($finalData) :
+            Anchor::sanitize($finalData) :
             $finalData;
     }
 
@@ -248,7 +250,7 @@ class Request
      *
      * @param array|string|null $filenames The file(s) you want to get
      */
-    public static function files($filenames = null)
+    public function files($filenames = null)
     {
         if ($filenames == null) {
             return $_FILES;
@@ -274,7 +276,7 @@ class Request
      * @param string|null $key
      * @return array|string|null
      */
-    public static function cookies(string $key = null)
+    public function cookies(string $key = null)
     {
         return $key === null ?
             Cookie::all() :
@@ -285,11 +287,11 @@ class Request
      * Does the Request body contain parsed form data?
      * @return bool
      */
-    public static function isFormData(): bool
+    public function isFormData(): bool
     {
-        $method = static::getMethod();
+        $method = $this->getMethod();
 
-        return ($method === self::METHOD_POST && is_null(static::getContentType())) || in_array(static::getMediaType(), self::$formDataMediaTypes);
+        return ($method === self::METHOD_POST && is_null($this->getContentType())) || in_array($this->getMediaType(), $this->formDataMediaTypes);
     }
 
     /**
@@ -303,7 +305,7 @@ class Request
      *
      * @return array|string|null
      */
-    public static function headers($key = null, bool $safeData = true)
+    public function headers($key = null, bool $safeData = true)
     {
         return ($key === null) ?
             Headers::all($safeData) :
@@ -314,7 +316,7 @@ class Request
      * Get Content Type
      * @return string|null
      */
-    public static function getContentType(): ?string
+    public function getContentType(): ?string
     {
         return Headers::get('CONTENT_TYPE');
     }
@@ -323,9 +325,9 @@ class Request
      * Get Media Type (type/subtype within Content Type header)
      * @return string|null
      */
-    public static function getMediaType(): ?string
+    public function getMediaType(): ?string
     {
-        $contentType = static::getContentType();
+        $contentType = $this->getContentType();
         if ($contentType) {
             $contentTypeParts = preg_split('/\s*[;,]\s*/', $contentType);
 
@@ -339,9 +341,9 @@ class Request
      * Get Media Type Params
      * @return array
      */
-    public static function getMediaTypeParams(): array
+    public function getMediaTypeParams(): array
     {
-        $contentType = static::getContentType();
+        $contentType = $this->getContentType();
         $contentTypeParams = [];
 
         if ($contentType) {
@@ -361,9 +363,9 @@ class Request
      * Get Content Charset
      * @return string|null
      */
-    public static function getContentCharset(): ?string
+    public function getContentCharset(): ?string
     {
-        $mediaTypeParams = static::getMediaTypeParams();
+        $mediaTypeParams = $this->getMediaTypeParams();
         if (isset($mediaTypeParams['charset'])) {
             return $mediaTypeParams['charset'];
         }
@@ -375,7 +377,7 @@ class Request
      * Get Content-Length
      * @return int
      */
-    public static function getContentLength(): int
+    public function getContentLength(): int
     {
         return Headers::get('CONTENT_LENGTH') ?? 0;
     }
@@ -384,7 +386,7 @@ class Request
      * Get Host
      * @return string
      */
-    public static function getHost(): string
+    public function getHost(): string
     {
         if (isset($_SERVER['HTTP_HOST'])) {
             if (preg_match('/^(\[[a-fA-F0-9:.]+])(:\d+)?\z/', $_SERVER['HTTP_HOST'], $matches)) {
@@ -405,16 +407,16 @@ class Request
      * Get Host with Port
      * @return string
      */
-    public static function getHostWithPort(): string
+    public function getHostWithPort(): string
     {
-        return sprintf('%s:%s', static::getHost(), static::getPort());
+        return sprintf('%s:%s', $this->getHost(), $this->getPort());
     }
 
     /**
      * Get Port
      * @return int
      */
-    public static function getPort(): int
+    public function getPort(): int
     {
         return (int) $_SERVER['SERVER_PORT'] ?? 80;
     }
@@ -423,7 +425,7 @@ class Request
      * Get Scheme (https or http)
      * @return string
      */
-    public static function getScheme(): string
+    public function getScheme(): string
     {
         return empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] === 'off' ? 'http' : 'https';
     }
@@ -432,7 +434,7 @@ class Request
      * Get Script Name (physical path)
      * @return string
      */
-    public static function getScriptName(): string
+    public function getScriptName(): string
     {
         return $_SERVER['SCRIPT_NAME'];
     }
@@ -441,16 +443,16 @@ class Request
      * Get Path (physical path + virtual path)
      * @return string
      */
-    public static function getPath(): string
+    public function getPath(): string
     {
-        return static::getScriptName() . static::getPathInfo();
+        return $this->getScriptName() . $this->getPathInfo();
     }
 
     /**
      * Get Path Info (virtual path)
      * @return string|null
      */
-    public static function getPathInfo(): ?string
+    public function getPathInfo(): ?string
     {
         return $_SERVER['REQUEST_URI'] ?? null;
     }
@@ -459,12 +461,12 @@ class Request
      * Get URL (scheme + host [ + port if non-standard ])
      * @return string
      */
-    public static function getUrl(): string
+    public function getUrl(): string
     {
-        $url = static::getScheme() . '://' . static::getHost();
+        $url = $this->getScheme() . '://' . $this->getHost();
 
-        if ((static::getScheme() === 'https' && static::getPort() !== 443) || (static::getScheme() === 'http' && static::getPort() !== 80)) {
-            $url .= ':' . static::getPort();
+        if (($this->getScheme() === 'https' && $this->getPort() !== 443) || ($this->getScheme() === 'http' && $this->getPort() !== 80)) {
+            $url .= ':' . $this->getPort();
         }
 
         return $url;
@@ -474,7 +476,7 @@ class Request
      * Get IP
      * @return string
      */
-    public static function getIp(): string
+    public function getIp(): string
     {
         $keys = ['X_FORWARDED_FOR', 'HTTP_X_FORWARDED_FOR', 'CLIENT_IP', 'REMOTE_ADDR'];
 
@@ -491,7 +493,7 @@ class Request
      * Get Referrer
      * @return string|null
      */
-    public static function getReferrer(): ?string
+    public function getReferrer(): ?string
     {
         return Headers::get('HTTP_REFERER');
     }
@@ -500,16 +502,16 @@ class Request
      * Get Referer (for those who can't spell)
      * @return string|null
      */
-    public static function getReferer(): ?string
+    public function getReferer(): ?string
     {
-        return static::getReferrer();
+        return $this->getReferrer();
     }
 
     /**
      * Get User Agent
      * @return string|null
      */
-    public static function getUserAgent(): ?string
+    public function getUserAgent(): ?string
     {
         return Headers::get('HTTP_USER_AGENT');
     }
