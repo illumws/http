@@ -1,5 +1,5 @@
 {
-    "name": "Illum/http",
+    "name": "illum/http",
     "description": "Modulo http para Illum routing",
     "keywords": [
         "http",
