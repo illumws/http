@@ -1,6 +1,6 @@
 {
-    "name": "illum/http",
-    "description": "Modulo http para illum routing",
+    "name": "Illum/http",
+    "description": "Modulo http para Illum routing",
     "keywords": [
         "http",
         "request",
@@ -19,7 +19,7 @@
     ],
     "autoload": {
         "psr-4": {
-            "illum\\Http\\": "src/"
+            "Illum\\Http\\": "src/"
         },
         "files": ["src/helper.php"]
     },

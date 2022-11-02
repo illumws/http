@@ -1,6 +1,6 @@
 <?php
 
-namespace illum\Http;
+namespace Illum\Http;
 
 class Status {
     public const HTTP_CONTINUE = 100;

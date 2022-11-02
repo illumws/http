@@ -1,6 +1,6 @@
 <?php
 
-namespace illum\Http;
+namespace Illum\Http;
 
 use function ob_start;
 

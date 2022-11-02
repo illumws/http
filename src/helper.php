@@ -8,22 +8,22 @@ if (!function_exists('request')) {
      *
      * @param array|string $data — Get data from request
      * 
-     * @return \illum\Http\Request
+     * @return \Illum\Http\Request
      */
-    function request(): ?\illum\Http\Request
+    function request(): ?\Illum\Http\Request
     {
         if (class_exists('\Leaf\Config')) {
             $request = Leaf\Config::get("request")["instance"] ?? null;
 
             if (!$request) {
-                $request = new \illum\Http\Request;
+                $request = new \Illum\Http\Request;
                 Leaf\Config::set("request", ["instance" => $request]);
             }
 
             return $request;
         }
 
-        return new \illum\Http\Request();
+        return new \Illum\Http\Request();
     }
 }
 
@@ -33,7 +33,7 @@ if (!function_exists('response')) {
      *
      * @param array|string $data — The JSON response to set
      * 
-     * @return \illum\Http\Response
+     * @return \Illum\Http\Response
      */
     function response()
     {
@@ -41,13 +41,13 @@ if (!function_exists('response')) {
             $response = Leaf\Config::get("response")["instance"] ?? null;
 
             if (!$response) {
-                $response = new \illum\Http\Response;
+                $response = new \Illum\Http\Response;
                 Leaf\Config::set("response", ["instance" => $response]);
             }
 
             return $response;
         }
 
-        return new \illum\Http\Response();
+        return new \Illum\Http\Response();
     }
 }
